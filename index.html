@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Client</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #ffffff;
+            color: #000000;
+            margin: 40px auto;
+            max-width: 600px;
+            padding: 0 20px;
+        }
+        .container {
+            border: 1px solid #000000;
+            padding: 20px;
+            background: #ffffff;
+        }
+        h2 {
+            margin-top: 0;
+            font-size: 1.5em;
+            font-weight: normal;
+        }
+        #status {
+            padding: 10px 0;
+            margin-bottom: 15px;
+            font-size: 0.9em;
+            border-bottom: 1px dashed #000000;
+        }
+        textarea {
+            width: 100%;
+            height: 100px;
+            padding: 10px;
+            box-sizing: border-box;
+            border: 1px solid #000000;
+            font-family: inherit;
+            resize: vertical;
+        }
+        button {
+            background-color: #000000;
+            color: #ffffff;
+            border: none;
+            padding: 10px 20px;
+            margin-top: 10px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 1em;
+        }
+        button:disabled {
+            background-color: #cccccc;
+            color: #666666;
+            cursor: not-allowed;
+        }
+        h3 {
+            font-size: 1.1em;
+            font-weight: normal;
+            margin-top: 20px;
+            margin-bottom: 5px;
+        }
+        #output {
+            margin-top: 5px;
+            padding: 10px;
+            border: 1px solid #000000;
+            white-space: pre-wrap;
+            min-height: 50px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>AI Chat</h2>
+    <div id="status">Loading AI Framework. Please wait...</div>
+    
+    <textarea id="input" placeholder="Type something here..." disabled></textarea>
+    <button id="generate-btn" disabled>Generate</button>
+
+    <h3>Response:</h3>
+    <div id="output">The model will generate text here.</div>
+</div>
+
+<script type="module">
+    import { pipeline } from 'https://jsdelivr.net';
+
+    const statusDiv = document.getElementById('status');
+    const inputArea = document.getElementById('input');
+    const generateBtn = document.getElementById('generate-btn');
+    const outputDiv = document.getElementById('output');
+
+    let generator = null;
+
+    async initAI() {
+        try {
+            statusDiv.innerText = "Downloading AI model (~900MB). This happens only once...";
+            
+            generator = await pipeline('text-generation', 'Xenova/Qwen1.5-0.5B-Chat');
+            
+            statusDiv.innerText = "AI Model Ready. All processing is local.";
+            inputArea.disabled = false;
+            generateBtn.disabled = false;
+        } catch (error) {
+            statusDiv.innerText = "Error loading model: " + error.message;
+            console.error(error);
+        }
+    }
+
+    async function generateText() {
+        const text = inputArea.value.trim();
+        if (!text || !generator) return;
+
+        generateBtn.disabled = true;
+        outputDiv.innerText = "Thinking...";
+
+        try {
+            const output = await generator(text, { 
+                max_new_tokens: 120,
+                temperature: 0.7,
+                repetition_penalty: 1.1
+             });
+
+            outputDiv.innerText = output.generated_text;
+        } catch (error) {
+            outputDiv.innerText = "Generation Error: " + error.message;
+        } finally {
+            generateBtn.disabled = false;
+        }
+    }
+
+    generateBtn.addEventListener('click', generateText);
+    initAI();
+</script>
+
+</body>
+</html>
